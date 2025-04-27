@@ -22,7 +22,7 @@ Router.get('/logout', (req, res) => {
 	User.Logout(req, res);
 });
 
-Router.get('/refreshtoken', (req, res) => {
+Router.post('/refreshtoken', (req, res) => {
 	User.RefreshToken(req, res);
 });
 

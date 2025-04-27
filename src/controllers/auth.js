@@ -26,15 +26,15 @@ async function ForgetPassword(req, res) {
 }
 
 async function ResetPassword(req, res) {
-    let user = req.body;
-    let result = await Service.ResetPassword(user.Email, user.Old_Password, user.NewPassword);
+    const {Email, OldPassword, NewPassword} = req.body;
+    let result = await Service.ResetPassword(Email, OldPassword, NewPassword);
     return SendApiResponse(res, result);
 }
 
 async function RefreshToken(req, res) {
-    let user_ID = req.query.User_ID;
-    const result = await Service.RefreshToken(user_ID);
-    return SendApiResponse(res, result);
+    const {ID, Token} = req.body;
+    return await Service.RefreshToken(res, ID, Token);
+    // return SendApiResponse(res, result);
 };
 
 module.exports = {

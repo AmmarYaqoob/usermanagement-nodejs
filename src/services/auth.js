@@ -3,7 +3,8 @@ const AuthRepo = require('../repositories/auth');
 const { ResponseObj } = require('../utils/responsewrapper');
 const { Encrypt, Compare } = require('../utils/EncryptDecrypt');
 const { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } = require('../utils/tokenhandler');
-const Token = require('../repositories/refreshtoken');
+const TokenModel = require('../repositories/refreshtoken');
+const { SendApiResponse } = require('../utils/responsewrapper');
 
 /**
  * Signup
@@ -52,7 +53,7 @@ async function Login(Body) {
         return objRes;
     }
 
-    const boolean = await Compare(Password, result.dataValues.Password);
+    const boolean = await Compare(Password, result.Password);
     if (!boolean) {
         objRes.IsSuccess = false;
         objRes.Message = 'Authentication failed. User not found.';
@@ -68,19 +69,18 @@ async function Login(Body) {
     const refreshToken = GenerateRefreshToken({ ID: result.ID });
     const expiryDate = new Date();
     expiryDate.setDate(expiryDate.getDate() + 7);
-    await Token.Create(refreshToken, result.ID, expiryDate, new Date());
-    let UserObj = result.dataValues;
-    UserObj.LastLoggedIn = currentDate;
-    UserObj.IsLoggedIn = 1;
-    UserObj.Token = token;
-    let updateResult = await AuthRepo.Update(result, UserObj);
+    await TokenModel.Create(refreshToken, result.ID, expiryDate, new Date());
+    result.LastLoggedIn = currentDate;
+    result.IsLoggedIn = 1;
+    result.Token = token;
+    let updateResult = await AuthRepo.Update(result);
     if (!updateResult) {
         objRes.Message = 'Error on Updation';
         objRes.IsSuccess = false;
         return objRes;
     }
     objRes.Message = 'Updated!';
-    objRes.Data = { ID: UserObj.ID, Token: token, RefreshToken: refreshToken }
+    objRes.Data = { ID: result.ID, Token: token, RefreshToken: refreshToken }
     return objRes;
 }
 
@@ -149,7 +149,7 @@ async function Logout(ID) {
         return objRes;
     }
     let logoutResult = await AuthRepo.Logout(result);
-    await Token.Delete(result.Token);
+    await TokenModel.Delete(result.Token);
     if (!logoutResult) {
         objRes.IsSuccess = false;
         objRes.Message = 'Error On Logout';
@@ -164,19 +164,19 @@ async function Logout(ID) {
  * @param {number} ID
  * @returns {Promise}
  */
-async function RefreshToken(ID) {
+async function RefreshToken(res, ID, Token) {
     let objRes = new ResponseObj;
-    if (!req.body.Token) return res.status(401).json({ message: 'No token provided' });
+    if (!Token) return res.status(401).json({ message: 'No token provided' });
 
-    const storedToken = await Token.GetByToken(req.body.Token);
+    const storedToken = await TokenModel.GetByToken(Token);
     if (!storedToken) return res.status(403).json({ message: 'Invalid refresh token' });
 
     if (new Date(storedToken.ExpiryDate) < new Date()) {
-        await Token.Delete(req.body.Token);
+        await TokenModel.Delete(Token);
         return res.status(403).json({ message: 'Refresh token expired' });
     }
 
-    const isVerfied = VerifyRefreshToken(req.body.Token);
+    const isVerfied = VerifyRefreshToken(Token);
     if (!isVerfied) return res.status(403).json({ message: 'Invalid refresh token' });
 
     const newAccessToken = GenerateAccessToken({ ID: ID });
@@ -185,19 +185,21 @@ async function RefreshToken(ID) {
     if (!result) {
         objRes.IsSuccess = false;
         objRes.Message = 'User not found.';
-        return objRes;
+        return SendApiResponse(res, objRes)
     }
-    UserObj.Token = newAccessToken;
-    let updateResult = await AuthRepo.Update(result, UserObj);
+    result.Token = newAccessToken;
+    let updateResult = await AuthRepo.Update(result);
     if (!updateResult) {
         objRes.Message = 'Error on Updation';
         objRes.IsSuccess = false;
-        return objRes;
+        return SendApiResponse(res, objRes)
     }
 
     objRes.Token = newAccessToken;
     objRes.Message = 'Token refereshed!';
-    return objRes;
+    return SendApiResponse(res, objRes)
+
+    
 }
 
 module.exports = {

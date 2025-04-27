@@ -13,7 +13,7 @@ const GenerateRefreshToken = (Payload) => {
 };
 
 const VerifyRefreshToken = (Payload) => {
-    jwt.verify(Payload, process.env.JWT_REFRESH_SECRET, (err, user) => {
+    return jwt.verify(Payload, process.env.JWT_REFRESH_SECRET, (err, user) => {
         if (err) return false;
         return true;
     });

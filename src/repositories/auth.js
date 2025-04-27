@@ -34,14 +34,14 @@ async function Create(User) {
     return content;
 }
 
-async function Update(UpdateObject, User) {
-    let content = await UpdateObject.updateAttributes({
-        UserName: User.UserName,
-        Email: User.Email,
-        Password: User.Password,
-        LastLoggedIn: User.LastLoggedIn,
-        IsLoggedIn: User.IsLoggedIn,
-        Token: User.Token,
+async function Update(UpdateObject) {
+    let content = await UpdateObject.update({
+        UserName: UpdateObject.UserName,
+        Email: UpdateObject.Email,
+        Password: UpdateObject.Password,
+        LastLoggedIn: UpdateObject.LastLoggedIn,
+        IsLoggedIn: UpdateObject.IsLoggedIn,
+        Token: UpdateObject.Token,
     });
     return content;
 }

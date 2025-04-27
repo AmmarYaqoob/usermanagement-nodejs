@@ -9,28 +9,28 @@ var User = sequelize.define('users', {
         autoIncrement: true
     },
     Email: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     UserName: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     ProfilePicture: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     ProfilePictureThumbnail: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     Address: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     City: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     State: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     Country: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     Phone: {
         type: Sequelize.INTEGER
@@ -39,7 +39,7 @@ var User = sequelize.define('users', {
         type: Sequelize.BOOLEAN
     },
     Password: {
-        type: Sequelize.STRING
+        type: Sequelize.TEXT
     },
     RoleID: {
         type: Sequelize.INTEGER,
