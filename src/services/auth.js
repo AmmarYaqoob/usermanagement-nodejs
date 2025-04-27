@@ -1,8 +1,9 @@
 const moment = require('moment');
-var jwt = require('jsonwebtoken');
 const AuthRepo = require('../repositories/auth');
 const { ResponseObj } = require('../utils/responsewrapper');
 const { Encrypt, Compare } = require('../utils/EncryptDecrypt');
+const { GenerateAccessToken, GenerateRefreshToken, VerifyRefreshToken } = require('../utils/tokenhandler');
+const Token = require('../repositories/refreshtoken');
 
 /**
  * Signup
@@ -59,14 +60,15 @@ async function Login(Body) {
     }
     if (result.IsLoggedIn) {
         objRes.IsSuccess = false;
-        objRes.Already_Login = false;
+        objRes.AlreadyLogin = true;
         objRes.Message = 'Already Logged in';
         return objRes;
     }
-    let jwtSecretKey = process.env.JWT_SECRET;
-    let token = jwt.sign({ ID: result.ID }, jwtSecretKey, {
-        expiresIn: 60 * 60 * 24 // expires in 24 hours
-    });
+    const token = GenerateAccessToken({ ID: result.ID });
+    const refreshToken = GenerateRefreshToken({ ID: result.ID });
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+    await Token.Create(refreshToken, result.ID, expiryDate, new Date());
     let UserObj = result.dataValues;
     UserObj.LastLoggedIn = currentDate;
     UserObj.IsLoggedIn = 1;
@@ -78,7 +80,7 @@ async function Login(Body) {
         return objRes;
     }
     objRes.Message = 'Updated!';
-    objRes.Data = { Token: UserObj.Token, ID: UserObj.ID }
+    objRes.Data = { ID: UserObj.ID, Token: token, RefreshToken: refreshToken }
     return objRes;
 }
 
@@ -97,7 +99,7 @@ async function ForgetPassword(Email) {
     }
     objRes.Message = 'We have sent you a reset link to update your password. Kindly check your Email.';
     return objRes;
-};  
+};
 
 /**
  * Reset password
@@ -147,6 +149,7 @@ async function Logout(ID) {
         return objRes;
     }
     let logoutResult = await AuthRepo.Logout(result);
+    await Token.Delete(result.Token);
     if (!logoutResult) {
         objRes.IsSuccess = false;
         objRes.Message = 'Error On Logout';
@@ -163,18 +166,28 @@ async function Logout(ID) {
  */
 async function RefreshToken(ID) {
     let objRes = new ResponseObj;
+    if (!req.body.Token) return res.status(401).json({ message: 'No token provided' });
+
+    const storedToken = await Token.GetByToken(req.body.Token);
+    if (!storedToken) return res.status(403).json({ message: 'Invalid refresh token' });
+
+    if (new Date(storedToken.ExpiryDate) < new Date()) {
+        await Token.Delete(req.body.Token);
+        return res.status(403).json({ message: 'Refresh token expired' });
+    }
+
+    const isVerfied = VerifyRefreshToken(req.body.Token);
+    if (!isVerfied) return res.status(403).json({ message: 'Invalid refresh token' });
+
+    const newAccessToken = GenerateAccessToken({ ID: ID });
+
     let result = await AuthRepo.GetByID(ID);
     if (!result) {
         objRes.IsSuccess = false;
         objRes.Message = 'User not found.';
         return objRes;
     }
-    let jwtSecretKey = process.env.JWT_SECRET_KEY;
-    let token = jwt.sign({ ID: result.ID }, jwtSecretKey, {
-        expiresIn: 60 * 60 * 24 // expires in 24 hours
-    });
-    let UserObj = result.dataValues;
-    UserObj.Token = token;
+    UserObj.Token = newAccessToken;
     let updateResult = await AuthRepo.Update(result, UserObj);
     if (!updateResult) {
         objRes.Message = 'Error on Updation';
@@ -182,6 +195,7 @@ async function RefreshToken(ID) {
         return objRes;
     }
 
+    objRes.Token = newAccessToken;
     objRes.Message = 'Token refereshed!';
     return objRes;
 }
