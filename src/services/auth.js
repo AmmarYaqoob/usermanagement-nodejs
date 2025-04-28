@@ -168,7 +168,7 @@ async function RefreshToken(res, ID, Token) {
     let objRes = new ResponseObj;
     if (!Token) return res.status(401).json({ message: 'No token provided' });
 
-    const storedToken = await TokenModel.GetByToken(Token);
+    const storedToken = await TokenModel.GetByToken(ID, Token);
     if (!storedToken) return res.status(403).json({ message: 'Invalid refresh token' });
 
     if (new Date(storedToken.ExpiryDate) < new Date()) {
@@ -180,6 +180,11 @@ async function RefreshToken(res, ID, Token) {
     if (!isVerfied) return res.status(403).json({ message: 'Invalid refresh token' });
 
     const newAccessToken = GenerateAccessToken({ ID: ID });
+    const refreshToken = GenerateRefreshToken({ ID: ID });
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+    await TokenModel.Delete(storedToken.Token);
+    await TokenModel.Create(refreshToken, ID, expiryDate, new Date());
 
     let result = await AuthRepo.GetByID(ID);
     if (!result) {

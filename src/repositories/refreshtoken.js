@@ -1,9 +1,10 @@
 let RefreshToken = require('../models/tokens');
 
-async function GetByToken(Token) {
+async function GetByToken(ID, Token) {
     let content = await RefreshToken.findOne({
         where: {
-            Token: Token
+            Token: Token,
+            UserID: ID,
         }
     });
     return content;
