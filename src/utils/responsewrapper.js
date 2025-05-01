@@ -4,7 +4,8 @@ let ResponseObj = function () {
         IsSuccess: true,
         AlreadyLogin: false,
         Message: '',
-        Data: []
+        Data: [],
+        Stack: ''
     }
 }
 function SendApiResponse(Res, Obj) {

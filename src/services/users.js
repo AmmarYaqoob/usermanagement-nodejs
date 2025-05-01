@@ -1,17 +1,20 @@
 const moment = require('moment');
 const UserRepo = require('../repositories/users');
 const { ResponseObj } = require('../utils/responsewrapper');
+const StatusMessage = require('../enums/statusmessage');
+const { Encrypt } = require('../utils/EncryptDecrypt');
+const { Signup } = require('../services/auth');
 
-async function GetByID(Member_ID) {
+async function GetByID(ID) {
     let objRes = new ResponseObj;
-    let result = await UserRepo.GetByID(Member_ID);
+    let result = await UserRepo.GetByID(ID);
     if (result) {
         objRes.Message = 'Get By Id';
         objRes.Data = result;
         return objRes;
     }
     objRes.Is_Success = false;
-    objRes.Message = 'No Data';
+    objRes.Message = StatusMessage.NODATA;
     return objRes;
 }
 
@@ -24,40 +27,31 @@ async function Get() {
         return objRes;
     }
     objRes.Is_Success = false;
-    objRes.Message = 'No Data';
+    objRes.Message = StatusMessage.NODATA;
     return objRes;
 }
 
-async function Add(Member) {
-    let objRes = new ResponseObj;
-    let currentTime = moment().format("YYYY-MM-DDTHH:mm:ss");
-    Member.Created_Date = currentTime;
-    Member.Created_By = 1;
-    let result = await UserRepo.Add(Member);
-    if (result) {
-        objRes.Message = 'Created';
-        objRes.Data = result;
-        return objRes;
-    }
-    objRes.Is_Success = false;
-    objRes.Message = 'Error on Creation';
+async function Add(User) {
+    let objRes = await Signup(User)
     return objRes;
 }
 
-async function Update(Member) {
+async function Update(User) {
     let objRes = new ResponseObj;
     let currentTime = moment().format("YYYY-MM-DDTHH:mm:ss");
-    let result = await UserRepo.GetByID(Member.Member_ID);
+    let result = await UserRepo.GetByID(User.ID);
     if (!result) {
         objRes.Is_Success = false;
-        objRes.Message = 'Error on Updation';
+        objRes.Message = StatusMessage.UPDATEERROR;
         return objRes;
     }
-    Member.Update_Date = currentTime;
-    let updateResult = await UserRepo.Update(result, Member);
+    result.UserName = User.UserName;
+    result.Email = User.Email;
+    result.UpdateDate = currentTime;
+    let updateResult = await UserRepo.Update(result);
     if (!updateResult) {
         objRes.Is_Success = false;
-        objRes.Message = 'Error on Updation';
+        objRes.Message = StatusMessage.UPDATEERROR;
         return objRes;
     }
     objRes.Message = 'Update';
@@ -65,18 +59,18 @@ async function Update(Member) {
     return objRes;
 }
 
-async function Delete(Member_ID) {
+async function Delete(ID) {
     let objRes = new ResponseObj;
-    let result = await UserRepo.GetByID(Member_ID);
+    let result = await UserRepo.GetByID(ID);
     if (result) {
         let deleteResult = UserRepo.Delete(result);
         if (deleteResult) {
-            objRes.Message = 'Deleted';
+            objRes.Message = StatusMessage.DELETED;
             return objRes;
         }
     }
     objRes.Is_Success = false;
-    objRes.Message = 'No Data';
+    objRes.Message = StatusMessage.NODATA;
     return objRes;
 }
 

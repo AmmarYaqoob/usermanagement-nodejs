@@ -6,7 +6,7 @@ let Users = require("../routes/user.route")
 let Role = require('../routes/roles.route');
 
 Router.use('/auth', Auth);
-Router.use('/users', VerifyToken, Users);
+Router.use('/users', Users);
 // Router.use('/users', VerifyToken, Users);
 Router.use('/roles', Role);
 

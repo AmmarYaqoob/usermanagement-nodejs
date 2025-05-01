@@ -13,7 +13,7 @@ const { SendApiResponse } = require('../utils/responsewrapper');
  */
 async function Signup(User) {
     let objRes = new ResponseObj;
-    let currentDate = moment().format("YYYYMMDDHHmmss");
+    let currentDate = moment().format("YYYY-MM-DDTHH:mm:ss");
     let result = await AuthRepo.GetByEmail(User.Email);
     if (result) {
         objRes.Message = 'Email address already exists in our system.';
@@ -21,8 +21,13 @@ async function Signup(User) {
         return objRes;
     }
     const encryptedPassword = await Encrypt(User.Password);
+    User.CreatedDate = currentDate;
     User.Password = encryptedPassword;
-    User.CurrentDate = currentDate;
+    User.CreatedBy = 1;
+    User.RoleID = 2;
+    User.IsActive = true;
+    User.IsVerified = false;
+    User.IsLoggedIn = false;
     let createResult = await AuthRepo.Create(User);
     if (!createResult) {
         objRes.Message = 'Error on Creation';
@@ -92,7 +97,8 @@ async function Login(Body) {
 async function ForgetPassword(Email) {
     let objRes = new ResponseObj;
     let result = await AuthRepo.GetByEmail(Email);
-    if (!result) {
+    if (!result || !result.IsVerified) {
+        if(!result.IsActive)
         objRes.IsSuccess = false;
         objRes.Message = 'User not found.';
         return objRes;
@@ -111,7 +117,7 @@ async function ForgetPassword(Email) {
 async function ResetPassword(Email, OldPassword, NewPassword) {
     let objRes = new ResponseObj;
     let result = await AuthRepo.GetByEmail(Email);
-    if (!result) {
+    if (!result && !IsVerified) {
         objRes.IsSuccess = false;
         objRes.Message = 'User not found.';
         return objRes;

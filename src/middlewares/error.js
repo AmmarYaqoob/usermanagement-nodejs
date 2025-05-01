@@ -1,4 +1,7 @@
-﻿const ErrorConverter = (err, req, res, next) => {
+﻿const { ResponseObj } = require('../utils/responsewrapper');
+const HttpStatus = require('../enums/httpstatus');
+
+const ErrorConverter = (err, req, res, next) => {
   let error = err;
   if (!(error instanceof ApiError)) {
     const statusCode =
@@ -12,15 +15,12 @@
 const ErrorMiddleware = (err, req, res, next) => {
   console.error(err.stack); // Log the error stack trace for debugging
 
-  // Customize your error response based on the error type or status code
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  let objRes = new ResponseObj;
+  objRes.IsSuccess = err.statusCode || 500;
+  objRes.Message = err.message || 'Internal Server Error';
+  objRes.Stack = process.env.NODE_ENV === 'production' ? null : err.stack;
 
-  res.status(statusCode).json({
-    success: false,
-    message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack
-  });
+  res.status(HttpStatus.INTERNAL_SERVER_ERROR).send(objRes);
 };
 
 module.exports = { ErrorConverter, ErrorMiddleware }

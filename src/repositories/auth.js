@@ -15,8 +15,7 @@ async function GetByEmail(Email) {
     let content = await UserModel.findOne({
         where: {
             Email: Email,
-            IsActive: 1,
-            IsVerified: 1
+            IsActive: 1
         }
     });
     return content;
@@ -27,9 +26,11 @@ async function Create(User) {
         UserName: User.UserName,
         Email: User.Email,
         Password: User.Password,
-        Created_Date: User.CurrentDate,
-        IsActive: 1,
-        IsVerified: 1
+        RoleID: User.RoleID,
+        CreatedDate: User.CreatedDate,
+        IsActive: User.IsActive,
+        IsLoggedIn: User.IsLoggedIn,
+        CreatedBy: User.CreatedBy
     });
     return content;
 }

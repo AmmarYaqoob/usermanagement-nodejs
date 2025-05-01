@@ -15,7 +15,7 @@ app.use(Cors());
 app.use(FileUpload());
 app.use('/api', RouteMiddleware);
 
-app.use(ErrorMiddleWare)
+// app.use(ErrorMiddleWare)
 app.use(ErrorConverter);
 app.use(ErrorMiddleware);
 
